@@ -1,5 +1,5 @@
 /* script.js - Part 1 */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkILvNpT7OZRuWLtQeuRqMbViRz7I1c-zzuqMVsym9K7Dv6FuDaOOZhN6aHsWIKZY/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhKY9MXntcaKDvijcrdp6I_jflWX2fseXmg5zPoo6376wDdJGNiNZS4KJLz0hvsXUZ/exec";
 
 let products = JSON.parse(localStorage.getItem('angun_cache')) || [];
 let cart = {}; 
