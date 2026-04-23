@@ -405,3 +405,89 @@ function editProduct(rowId) {
 }
 
 initDecors(); initNav(); syncData();
+
+// 1. รายการข้อความเตือนแบบคละกัน
+const warnings = [
+    "หยุดนะ! อย่าพยายามแกะโค้ดเลยจ้า ✨",
+    "เตือนครั้งที่ 1: ห้ามเข้าถึงหน้าพัฒนาซอฟต์แวร์นะ!",
+    "สงสัยอะไรทักถาม @309ranuu ได้เลยจ้า ไม่ต้องแกะเอง",
+    "โค้ดนี้ได้รับลิขสิทธิ์โดย องุ่นหวาน | Grawii Studio ห้ามคัดลอก!"
+];
+
+// 2. รายการลิงก์สุ่ม (เช่น คลิปผี หรือหน้าเว็บอื่นๆ)
+const prankLinks = [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // Rickroll (หลอกให้กด)
+    "https://www.youtube.com/results?search_query=ghost+scary+video" // ลิงก์ค้นหาคลิปผี
+];
+
+function triggerSecurityAction() {
+    // สุ่มข้อความเตือน
+    const randomText = warnings[Math.floor(Math.random() * warnings.length)];
+    alert(randomText);
+    
+    // สุ่มการ Redirect (ส่งไปหน้าอื่น)
+    const randomLink = prankLinks[Math.floor(Math.random() * prankLinks.length)];
+    window.location.href = randomLink;
+}
+
+// 3. ตรวจสอบการกดปุ่ม (F12, Ctrl+Shift+I, ฯลฯ)
+document.onkeydown = function(e) {
+    if (e.keyCode == 123 || 
+        (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || 
+        (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+        triggerSecurityAction();
+        return false;
+    }
+};
+
+// 🛠️ โหมดนักพัฒนา (สวิตช์ควบคุมระบบป้องกัน)
+// เปลี่ยนเป็น true = ปิดระบบป้องกัน (เพื่อแก้ไขงาน/ดู Error)
+// เปลี่ยนเป็น false = เปิดระบบป้องกัน (เพื่อใช้งานจริง/กันคนแกะ)
+const isDevMode = false; 
+
+if (!isDevMode) {
+    // 1. รายการข้อความเตือนแบบคละกัน
+    const warnings = [
+        "หยุดนะ! อย่าพยายามแกะโค้ดเลยจ้า ✨",
+        "เตือนครั้งที่ 1: ห้ามเข้าถึงหน้าพัฒนาซอฟต์แวร์นะ!",
+        "สงสัยอะไรทักถาม @309ranuu ได้เลยจ้า ไม่ต้องแกะเอง",
+        "โค้ดนี้ได้รับลิขสิทธิ์โดย องุ่นหวาน | Grawii Studio ห้ามคัดลอก!"
+    ];
+
+    // 2. รายการลิงก์สุ่ม
+    const prankLinks = [
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "https://www.youtube.com/results?search_query=ghost+scary+video"
+    ];
+
+    const triggerSecurityAction = () => {
+        const randomText = warnings[Math.floor(Math.random() * warnings.length)];
+        alert(randomText);
+        const randomLink = prankLinks[Math.floor(Math.random() * prankLinks.length)];
+        window.location.href = randomLink;
+    };
+
+    // 3. ป้องกันการกดปุ่ม (F12, Ctrl+Shift+I, U)
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123 || 
+            (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || 
+            (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+            triggerSecurityAction();
+            return false;
+        }
+    };
+
+    // 4. ตรวจสอบจากการลากแถบ DevTools
+    setInterval(function() {
+        const threshold = 160;
+        const isDevToolsOpen = window.outerWidth - window.innerWidth > threshold || 
+                               window.outerHeight - window.innerHeight > threshold;
+        if (isDevToolsOpen) {
+            document.body.innerHTML = "<h1 style='text-align:center; margin-top:20%; font-family:sans-serif;'>Security Alert: DevTools Detected!</h1>";
+            setTimeout(triggerSecurityAction, 500);
+        }
+    }, 1000);
+
+    // 5. ป้องกันคลิกขวา
+    document.addEventListener('contextmenu', event => event.preventDefault());
+}
