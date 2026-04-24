@@ -233,26 +233,56 @@ function formatDriveLink(url) {
     return url;
 }
 
-function updateProfileImage() {
+// ฟังก์ชันอัปเดตรูปโปรไฟล์แบบเชื่อมต่อ Google Sheet (ถาวร)
+async function updateProfileImage() {
     const input = document.getElementById('new-profile-url');
+    const btn = document.querySelector('#profile-modal .btn-pj-main');
     let rawUrl = input.value.trim();
+    
     if (!rawUrl) return alert("กรุณาวางลิงก์รูปภาพก่อนจ้า");
 
+    // แปลงลิงก์ (รองรับ Google Drive)
     const finalUrl = formatDriveLink(rawUrl);
-    document.getElementById('shop-profile-img').src = finalUrl;
     
-    // บันทึกเก็บไว้ในเครื่องชั่วคราว
-    localStorage.setItem('angun_temp_profile', finalUrl);
+    // แสดงสถานะการทำงานบนปุ่ม
+    const originalText = btn.innerText;
+    btn.innerText = "กำลังบันทึกข้อมูล...";
+    btn.disabled = true;
 
-    alert("อัปเดตรูปโปรไฟล์ชั่วคราวสำเร็จ!\n(ถ้าจะให้ถาวร อย่าลืมแก้ใน Google Sheet ด้วยน้า)");
-    input.value = "";
-    closeProfileModal();
+    try {
+        // 🚀 ส่งข้อมูลไปที่ Library เพื่อบันทึกทับในชีท Setting
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'saveProfile',
+                url: finalUrl
+            })
+        });
+
+        // 1. อัปเดตที่รูปโปรไฟล์บนหน้าเว็บทันที
+        document.getElementById('shop-profile-img').src = finalUrl;
+        
+        // 2. อัปเดต Cache ในเครื่อง
+        localStorage.setItem('angun_temp_profile', finalUrl);
+
+        alert("✨ บันทึกรูปโปรไฟล์ลง Google Sheet เรียบร้อยแล้ว!");
+        input.value = "";
+        closeProfileModal();
+    } catch (e) {
+        console.error(e);
+        alert("เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
+    } finally {
+        // คืนค่าสถานะปุ่ม
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
 }
 
-// เช็คค่ารูปโปรไฟล์ที่เคยบันทึกไว้ในเครื่องตอนเปิดเว็บ
+// ส่วนเช็คค่าตอนโหลดหน้าเว็บ (คงไว้เหมือนเดิมแต่ปรับ Delay เล็กน้อย)
 if(localStorage.getItem('angun_temp_profile')) {
     setTimeout(() => {
         const tempImg = localStorage.getItem('angun_temp_profile');
         if(tempImg) document.getElementById('shop-profile-img').src = tempImg;
-    }, 1500); // รอให้ syncData ทำงานเสร็จก่อนค่อยทับ
+    }, 1500); 
 }
