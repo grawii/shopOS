@@ -12,7 +12,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="AngunWan">
-
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
 
@@ -23,13 +22,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* ลบแถบสีเวลาแตะปุ่มบนมือถือ เพื่อความเนียนแบบแอป */
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: 'Prompt', sans-serif;
-        }
+        /* ลบแถบสีเวลาแตะปุ่ม และตั้งค่าฟอนต์ */
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Prompt', sans-serif; }
+        .wave-letter { display: inline-block; animation: wave 2s infinite ease-in-out; animation-delay: calc(var(--i) * 0.1s); }
+        @keyframes wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
 </head>
 <body class="antialiased">
@@ -56,7 +53,6 @@
 
             <section class="profile-card mb-10 max-w-[500px] mx-auto p-8 pr-16 shadow-lg relative">
                 <div class="btn-deco-svg" style="top: -6px; right: 15px; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><div class="hole-inner"><div class="hole-dot"></div><div class="hole-dot"></div><div class="hole-dot"></div><div class="hole-dot"></div></div></div>
-                
                 <div class="deco-star-2holes-new" style="bottom: -15px; left: -10px; position: absolute;">
                     <svg width="60" height="60" viewBox="0 0 24 24" fill="var(--pj-brown-dark)">
                         <path d="M12 2L14.4 9.1L22 9.1L15.9 13.5L18.3 20.6L12 16.2L5.7 20.6L8.1 13.5L2 9.1L9.6 9.1L12 2Z"/>
@@ -64,7 +60,6 @@
                         <circle cx="14.5" cy="12" r="1.5" fill="white"/>
                     </svg>
                 </div>
-
                 <div class="flex items-center gap-5">
                     <div class="w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-md bg-white"><img id="shop-profile-img" src="" alt="Logo"></div>
                     <div class="text-white">
@@ -73,7 +68,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="mb-10 overflow-x-auto"><div class="flex gap-3 pb-2" id="group-nav-list"></div></section>
         </header>
 
@@ -81,13 +75,11 @@
             <h3 class="font-bold text-pj-brown-dark mb-6 px-2">✨ สินค้าแนะนำ (Recommended)</h3>
             <div id="home-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6"></div>
         </div>
-
         <div id="page-subcat" class="hidden-page space-y-8 page-container">
             <h2 id="cat-header-title" class="text-xl font-bold text-pj-brown-dark text-center py-4 bg-white/60 rounded-3xl border-2 border-pj-brown-light">หมวดหมู่</h2>
             <div class="flex gap-2 overflow-x-auto pb-4" id="sub-nav-list"></div>
             <div id="networks-list-view" class="space-y-12"></div>
         </div>
-
         <div id="page-admin-login" class="hidden-page pt-10 page-container">
             <div class="bg-white p-10 rounded-[40px] shadow-xl border-2 border-pj-brown-light text-center max-w-[400px] mx-auto">
                 <h3 class="font-eng font-bold text-2xl text-pj-brown-dark uppercase mb-1">Admin Entry</h3>
@@ -96,7 +88,6 @@
                 <button onclick="handleAdminLogin()" class="admin-unlock-btn uppercase tracking-widest">LOG IN</button>
             </div>
         </div>
-
         <div id="page-admin-panel" class="hidden-page space-y-6 page-container">
             <div class="bg-pj-black text-white p-5 rounded-3xl flex justify-between items-center shadow-lg">
                 <div class="flex items-center gap-2">
@@ -105,7 +96,6 @@
                 </div>
                 <button onclick="logoutAdmin()" class="text-[10px] font-bold text-pj-brown-dark hover:text-white bg-red-500/10 hover:bg-red-500 px-3 py-1 rounded-full border border-pj-brown-light/30 transition-all">LOGOUT</button>
             </div>
-
             <div class="bg-white p-6 rounded-[35px] border-2 border-pj-brown-main shadow-lg">
                 <h4 id="admin-form-title" class="font-bold text-pj-brown-dark mb-4">➕ เพิ่มสินค้าใหม่</h4>
                 <input type="hidden" id="edit-row">
@@ -135,24 +125,16 @@
                     <button onclick="resetAdminForm()" id="btn-cancel-edit" class="hidden mt-2 p-4 bg-gray-200 rounded-xl font-bold text-gray-500">ยกเลิก</button>
                 </div>
             </div>
-
             <div class="bg-white p-6 rounded-[35px] border-2 border-pj-brown-light shadow-sm">
                 <h4 class="font-bold text-pj-brown-dark mb-4">📦 รายการสินค้าทั้งหมด (กดเพื่อแก้ไข)</h4>
                 <div id="admin-items-grid" class="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
             </div>
         </div>
-
         <div id="page-checkout" class="hidden-page pt-10 page-container">
             <div class="bg-white p-8 rounded-[45px] shadow-xl border-2 border-pj-brown-main">
-                <button onclick="showPage('home')" class="mb-4 text-xs font-bold text-pj-brown-dark underline flex items-center gap-1">
-                    <i data-lucide="chevron-left" class="w-3 h-3"></i> กลับไปเลือกเพิ่ม
-                </button>
-                <h3 class="text-2xl font-bold text-pj-brown-dark mb-6 flex items-center gap-2">
-                    <i data-lucide="receipt-text"></i> สรุปรายการสั่งซื้อ
-                </h3>
-                
+                <button onclick="showPage('home')" class="mb-4 text-xs font-bold text-pj-brown-dark underline flex items-center gap-1"><i data-lucide="chevron-left" class="w-3 h-3"></i> กลับไปเลือกเพิ่ม</button>
+                <h3 class="text-2xl font-bold text-pj-brown-dark mb-6 flex items-center gap-2"><i data-lucide="receipt-text"></i> สรุปรายการสั่งซื้อ</h3>
                 <div id="checkout-items-list" class="space-y-4 mb-8"></div>
-                
                 <div class="bg-pj-blue-light/30 p-6 rounded-3xl mb-8 border border-pj-brown-light/20">
                     <div class="space-y-2 text-pj-brown-dark mb-4" id="checkout-summary-calc"></div>
                     <div class="pt-4 border-t-2 border-pj-brown-main flex justify-between items-center">
@@ -160,23 +142,15 @@
                         <span class="text-3xl font-bold text-pj-brown-dark"><span id="checkout-final-sum">0</span>.-</span>
                     </div>
                 </div>
-
                 <div class="space-y-4">
                     <h4 class="font-bold text-pj-brown-dark">กรอกรายละเอียดเพื่อจัดส่ง</h4>
                     <div id="checkout-input-container"></div>
                     <p class="text-[10px] text-red-400 font-bold">* โปรดตรวจสอบข้อมูลให้ถูกต้องก่อนสั่งซื้อ</p>
                 </div>
-
-                <button onclick="confirmPurchase()" class="w-full mt-8 py-5 btn-pj-main rounded-[25px] shadow-lg flex items-center justify-center gap-2">
-                    <i data-lucide="shopping-cart"></i> ยืนยันการสั่งซื้อ
-                </button>
+                <button onclick="confirmPurchase()" class="w-full mt-8 py-5 btn-pj-main rounded-[25px] shadow-lg flex items-center justify-center gap-2"><i data-lucide="shopping-cart"></i> ยืนยันการสั่งซื้อ</button>
             </div>
         </div>
-        <footer class="mt-16 mb-8 text-center">
-            <p class="text-[10px] font-bold tracking-widest opacity-40 uppercase">
-                © องุ่นหวาน | Grawii Studio
-            </p>
-        </footer>
+        <footer class="mt-16 mb-8 text-center"><p class="text-[10px] font-bold tracking-widest opacity-40 uppercase">© องุ่นหวาน | Grawii Studio</p></footer>
     </main>
 
     <div id="cart-modal" class="modal-cart">
