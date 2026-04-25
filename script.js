@@ -15,7 +15,7 @@ function initDecors() {
     const pos = [{t:10,l:5},{t:15,l:85},{t:40,l:10},{t:45,l:92},{t:70,l:5},{t:75,l:80},{t:25,l:45},{t:90,l:40}];
     if(container) container.innerHTML = pos.map((p, i) => `<div class="floating-deco" style="top:${p.t}%; left:${p.l}%; color:var(--pj-bg); animation-delay:${i*0.4}s">${svgs[i%2]}</div>`).join('');
     const logo = document.getElementById('wave-logo');
-    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?'&nbsp;':c}</span>`).join('');
+    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?' ':c}</span>`).join('');
 }
 
 function updateDropdowns(dropdownData) {
@@ -78,19 +78,8 @@ function refreshUI() {
     renderHome();
     const catTitle = document.getElementById('cat-header-title');
     if(!document.getElementById('page-subcat').classList.contains('hidden-page') && catTitle) { handleGroupClick(catTitle.innerText, true); }
-    setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
-}
-
-function showPage(id) {
-    const mainHeader = document.getElementById('main-header');
-    document.querySelectorAll('.page-container').forEach(p => p.classList.add('hidden-page'));
-    const el = document.getElementById('page-'+id);
-    if(el) {
-        el.classList.remove('hidden-page');
-        if(id === 'checkout') { if(mainHeader) mainHeader.style.display = 'none'; window.scrollTo(0, 0); } else { if(mainHeader) mainHeader.style.display = 'block'; }
-    }
-    if (window.lucide) lucide.createIcons();
-}
+    setTimeout(() => { if(window.lucide) lucide.
+    /* script.js - Part 2: Admin, Security & Profile Logic */
 
 function proceedToCheckout() {
     if (Object.keys(cart).length === 0) return alert("ตะกร้าว่างเปล่าจ้า");
@@ -123,14 +112,18 @@ function confirmPurchase() {
     message += `------------------\n💰 *ยอดรวม:* ${document.getElementById('checkout-final-sum').innerText} บาท\n👤 *ข้อมูลผู้ซื้อ:* \n${infoParts.join('\n')}`;
     navigator.clipboard.writeText(message).then(() => { alert("สรุปรายการสำเร็จ! ระบบคัดลอกข้อมูลให้แล้ว กำลังส่งคุณไปที่ LINE ร้านเพื่อส่งข้อมูลจ้า"); window.location.href = "https://line.me/ti/p/@309ranuu"; });
 }
-/* script.js - Part 2: Admin & Security Logic */
+
 async function syncData() {
     try {
         const res = await fetch(SCRIPT_URL); const data = await res.json();
         if(data.status === 'success') {
             products = data.products; localStorage.setItem('angun_cache', JSON.stringify(products));
             if(data.settings) {
-                if(data.settings.profileImg) document.getElementById('shop-profile-img').src = data.settings.profileImg;
+                // แก้ไข: ดึงรูปจาก Sheet มาแสดงเป็นอันดับแรกเพื่อให้ถาวรทุกเครื่อง
+                if(data.settings.profileImg) {
+                    document.getElementById('shop-profile-img').src = data.settings.profileImg;
+                    localStorage.setItem('angun_temp_profile', data.settings.profileImg);
+                }
                 if(data.settings.shopName) document.getElementById('shop-name-display').innerText = data.settings.shopName;
                 currentPass = data.settings.adminPass;
             }
@@ -200,7 +193,7 @@ function editProduct(rowId) {
 }
 
 // 🛡️ SECURITY SYSTEM (RANDOM MESSAGES & PRANKS)
-const isDevMode = false; // เปลี่ยนเป็น true เมื่อต้องการแก้ไขงาน
+const isDevMode = false; 
 if (!isDevMode) {
     const warnings = ["หยุดนะ! อย่าพยายามแกะโค้ดเลยจ้า ✨", "เตือนครั้งที่ 1: ห้ามเข้าถึงหน้าพัฒนาซอฟต์แวร์นะ!", "สงสัยอะไรทักถาม @309ranuu ได้เลยจ้า ไม่ต้องแกะเอง", "โค้ดนี้ได้รับลิขสิทธิ์โดย องุ่นหวาน | Grawii Studio ห้ามคัดลอก!", "อุ๊ย! จะเอาโค้ดไปทำอะไรน้าาาา? 🍇"];
     const prankLinks = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=kY3sSTZ_wDs"];
@@ -219,8 +212,17 @@ if (!isDevMode) {
 
 // START EVERYTHING
 window.addEventListener('DOMContentLoaded', () => { initDecors(); initNav(); syncData(); });
+
 /* --- ระบบจัดการรูปโปรไฟล์เพิ่มเติม --- */
-function openProfileModal() { document.getElementById('profile-modal').classList.add('active'); }
+function openProfileModal() { 
+    // แก้ไข: ป้องกันลูกค้ากด ต้องเป็น Admin เท่านั้นถึงจะขึ้น Popup
+    if (!isAdmin) {
+        alert("ส่วนนี้สำหรับเจ้าของร้าน (Admin) เท่านั้นจ้า ✨");
+        return; 
+    }
+    document.getElementById('profile-modal').classList.add('active'); 
+}
+
 function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
 
 function formatDriveLink(url) {
@@ -233,24 +235,19 @@ function formatDriveLink(url) {
     return url;
 }
 
-// ฟังก์ชันอัปเดตรูปโปรไฟล์แบบเชื่อมต่อ Google Sheet (ถาวร)
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     let rawUrl = input.value.trim();
-    
     if (!rawUrl) return alert("กรุณาวางลิงก์รูปภาพก่อนจ้า");
 
-    // แปลงลิงก์ (รองรับ Google Drive)
     const finalUrl = formatDriveLink(rawUrl);
-    
-    // แสดงสถานะการทำงานบนปุ่ม
     const originalText = btn.innerText;
     btn.innerText = "กำลังบันทึกข้อมูล...";
     btn.disabled = true;
 
     try {
-        // 🚀 ส่งข้อมูลไปที่ Library เพื่อบันทึกทับในชีท Setting
+        // 🚀 บันทึกลงฐานข้อมูล Google Sheet ทันที (ต้องอัปเดต Library ด้วย)
         await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -260,10 +257,7 @@ async function updateProfileImage() {
             })
         });
 
-        // 1. อัปเดตที่รูปโปรไฟล์บนหน้าเว็บทันที
         document.getElementById('shop-profile-img').src = finalUrl;
-        
-        // 2. อัปเดต Cache ในเครื่อง
         localStorage.setItem('angun_temp_profile', finalUrl);
 
         alert("✨ บันทึกรูปโปรไฟล์ลง Google Sheet เรียบร้อยแล้ว!");
@@ -273,16 +267,7 @@ async function updateProfileImage() {
         console.error(e);
         alert("เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
     } finally {
-        // คืนค่าสถานะปุ่ม
         btn.innerText = originalText;
         btn.disabled = false;
     }
-}
-
-// ส่วนเช็คค่าตอนโหลดหน้าเว็บ (คงไว้เหมือนเดิมแต่ปรับ Delay เล็กน้อย)
-if(localStorage.getItem('angun_temp_profile')) {
-    setTimeout(() => {
-        const tempImg = localStorage.getItem('angun_temp_profile');
-        if(tempImg) document.getElementById('shop-profile-img').src = tempImg;
-    }, 1500); 
 }
