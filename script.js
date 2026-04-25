@@ -1,4 +1,4 @@
-/* script.js - Part 1: Shop Logic */
+/* script.js - Full Version (Fixed) */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkILvNpT7OZRuWLtQeuRqMbViRz7I1c-zzuqMVsym9K7Dv6FuDaOOZhN6aHsWIKZY/exec";
 
 let products = JSON.parse(localStorage.getItem('angun_cache')) || [];
@@ -6,6 +6,7 @@ let cart = {};
 let isAdmin = false;
 let currentPass = "1234";
 
+// 1. ฟังก์ชันเริ่มต้นสำหรับคลื่นและไอคอนลอย
 function initDecors() {
     const container = document.getElementById('deco-container');
     const svgs = [
@@ -14,8 +15,9 @@ function initDecors() {
     ];
     const pos = [{t:10,l:5},{t:15,l:85},{t:40,l:10},{t:45,l:92},{t:70,l:5},{t:75,l:80},{t:25,l:45},{t:90,l:40}];
     if(container) container.innerHTML = pos.map((p, i) => `<div class="floating-deco" style="top:${p.t}%; left:${p.l}%; color:var(--pj-bg); animation-delay:${i*0.4}s">${svgs[i%2]}</div>`).join('');
+    
     const logo = document.getElementById('wave-logo');
-    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?' ':c}</span>`).join('');
+    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?'&nbsp;':c}</span>`).join('');
 }
 
 function updateDropdowns(dropdownData) {
@@ -66,7 +68,9 @@ function updateCart(rowId, change, limitOne) {
     const id = Number(rowId);
     const currentQty = cart[id] || 0;
     const newQty = currentQty + change;
-    if (newQty <= 0) { delete cart[id]; } else if (limitOne && change > 0 && currentQty >= 1) { alert("มีสินค้านี้ในตะกร้าแล้ว (จำกัดซื้อได้เพียง 1 ชิ้นจ้า)"); } else { cart[id] = newQty; }
+    if (newQty <= 0) { delete cart[id]; } 
+    else if (limitOne && change > 0 && currentQty >= 1) { alert("มีสินค้านี้ในตะกร้าแล้ว (จำกัดซื้อได้เพียง 1 ชิ้นจ้า)"); } 
+    else { cart[id] = newQty; }
     refreshUI();
     if(document.getElementById('cart-modal').classList.contains('active')) renderCartItems();
 }
@@ -91,7 +95,6 @@ function showPage(id) {
     }
     if (window.lucide) lucide.createIcons();
 }
-/* script.js - Part 2: Admin, Security & Profile Logic */
 
 function proceedToCheckout() {
     if (Object.keys(cart).length === 0) return alert("ตะกร้าว่างเปล่าจ้า");
@@ -133,10 +136,10 @@ async function syncData() {
             if(data.settings) {
                 if(data.settings.profileImg) {
                     document.getElementById('shop-profile-img').src = data.settings.profileImg;
-                    localStorage.setItem('angun_temp_profile', data.settings.profileImg);
                 }
                 if(data.settings.shopName) document.getElementById('shop-name-display').innerText = data.settings.shopName;
                 currentPass = data.settings.adminPass;
+                updateDropdowns(data.settings.dropdowns);
             }
             refreshUI(); renderAdminItems();
         }
@@ -203,7 +206,7 @@ function editProduct(rowId) {
     document.getElementById('edit-row').value = p.row; document.getElementById('new-name').value = p.name; document.getElementById('new-price').value = p.price; document.getElementById('new-discount').value = p.discount; document.getElementById('new-cat').value = p.cat; document.getElementById('new-sub').value = p.sub; document.getElementById('new-net').value = p.network; document.getElementById('new-img').value = p.image; document.getElementById('new-preview').value = p.preview || ''; document.getElementById('new-recommended').checked = p.recommended; document.getElementById('new-limitOne').checked = p.limitOne; document.getElementById('admin-form-title').innerText = "📝 แก้ไขรายการสินค้า"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); window.scrollTo({ top: document.getElementById('page-admin-panel').offsetTop, behavior: 'smooth' });
 }
 
-// 🛡️ SECURITY SYSTEM (RANDOM MESSAGES & PRANKS)
+// 🛡️ SECURITY SYSTEM
 const isDevMode = false; 
 if (!isDevMode) {
     const warnings = ["หยุดนะ! อย่าพยายามแกะโค้ดเลยจ้า ✨", "เตือนครั้งที่ 1: ห้ามเข้าถึงหน้าพัฒนาซอฟต์แวร์นะ!", "สงสัยอะไรทักถาม @309ranuu ได้เลยจ้า ไม่ต้องแกะเอง", "โค้ดนี้ได้รับลิขสิทธิ์โดย องุ่นหวาน | Grawii Studio ห้ามคัดลอก!", "อุ๊ย! จะเอาโค้ดไปทำอะไรน้าาาา? 🍇"];
@@ -221,18 +224,11 @@ if (!isDevMode) {
     };
 }
 
-// START EVERYTHING
-window.addEventListener('DOMContentLoaded', () => { initDecors(); initNav(); syncData(); });
-
-/* --- ระบบจัดการรูปโปรไฟล์เพิ่มเติม --- */
+/* --- Profile Management --- */
 function openProfileModal() { 
-    if (!isAdmin) {
-        alert("ส่วนนี้สำหรับเจ้าของร้าน (Admin) เท่านั้นจ้า ✨");
-        return; 
-    }
+    if (!isAdmin) { alert("ส่วนนี้สำหรับเจ้าของร้าน (Admin) เท่านั้นจ้า ✨"); return; }
     document.getElementById('profile-modal').classList.add('active'); 
 }
-
 function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
 
 function formatDriveLink(url) {
@@ -253,30 +249,12 @@ async function updateProfileImage() {
 
     const finalUrl = formatDriveLink(rawUrl);
     const originalText = btn.innerText;
-    btn.innerText = "กำลังบันทึกข้อมูล...";
-    btn.disabled = true;
+    btn.innerText = "กำลังบันทึกข้อมูล..."; btn.disabled = true;
 
     try {
         await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            body: JSON.stringify({
-                action: 'saveProfile',
-                url: finalUrl
-            })
+            body: JSON.stringify({ action: 'saveProfile', url: finalUrl })
         });
-
-        document.getElementById('shop-profile-img').src = finalUrl;
-        localStorage.setItem('angun_temp_profile', finalUrl);
-
-        alert("✨ บันทึกรูปโปรไฟล์ลง Google Sheet เรียบร้อยแล้ว!");
-        input.value = "";
-        closeProfileModal();
-    } catch (e) {
-        console.error(e);
-        alert("เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
-}
+        document.getElementById('
