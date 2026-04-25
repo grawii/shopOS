@@ -193,9 +193,21 @@ function resetAdminForm() { document.getElementById('edit-row').value = ""; docu
 
 async function addNewProductToSheet() {
     const btn = document.getElementById('btn-save-sheet');
-    const data = { row: document.getElementById('edit-row').value, name: document.getElementById('new-name').value, price: Number(document.getElementById('new-price').value), discount: Number(document.getElementById('new-discount').value) || 0, cat: document.getElementById('new-cat').value, sub: document.getElementById('new-sub').value, network: document.getElementById('new-net').value, image: document.getElementById('new-img').value, preview: document.getElementById('new-preview').value, recommended: document.getElementById('new-recommended').checked, limitOne: document.getElementById('new-limitOne').checked };
-    if(!data.name || !data.price) return alert("กรุณากรอกชื่อและราคา"); btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
-    try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); alert(data.row ? "แก้ไขสำเร็จ!" : "บันทึกสำเร็จ!"); resetAdminForm(); syncData(); } catch(e) { alert("เกิดข้อผิดพลาด"); } finally { btn.innerText = "บันทึกข้อมูลสินค้า"; btn.disabled = false; }
+    const data = { 
+        row: document.getElementById('edit-row').value, 
+        name: document.getElementById('new-name').value, 
+        price: Number(document.getElementById('new-price').value), 
+        discount: Number(document.getElementById('new-discount').value) || 0, 
+        cat: document.getElementById('new-cat').value, 
+        sub: document.getElementById('new-sub').value, 
+        network: document.getElementById('new-net').value, 
+        // 🛠 แก้ไขจุดนี้: แปลงลิงก์รูปสินค้าก่อนส่งไปเซฟ
+        image: formatDriveLink(document.getElementById('new-img').value), 
+        preview: document.getElementById('new-preview').value, 
+        recommended: document.getElementById('new-recommended').checked, 
+        limitOne: document.getElementById('new-limitOne').checked 
+    };
+    // ... โค้ดส่วนที่เหลือคงเดิม ...
 }
 
 function editProduct(rowId) {
@@ -221,12 +233,19 @@ function openProfileModal() { if (!isAdmin) { alert("ส่วนนี้สำ
 function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
 
 function formatDriveLink(url) {
+    if (!url) return "";
+    // ถ้าเป็นลิงก์ Google Drive
     if (url.includes('drive.google.com')) {
         let fileId = "";
-        if (url.includes('id=')) { fileId = url.split('id=')[1].split('&')[0]; } 
-        else if (url.includes('/d/')) { fileId = url.split('/d/')[1].split('/')[0]; }
+        if (url.includes('id=')) { 
+            fileId = url.split('id=')[1].split('&')[0]; 
+        } else if (url.includes('/d/')) { 
+            fileId = url.split('/d/')[1].split('/')[0]; 
+        }
+        // ใช้ลิงก์รูปแบบ lh3 ซึ่งเสถียรที่สุดในการโชว์รูป
         return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
-    } return url;
+    }
+    return url;
 }
 
 async function updateProfileImage() {
