@@ -1,10 +1,26 @@
-/* script.js - Part 1: Shop Logic */
+/* script.js - Part 1: Shop Logic & Sync System */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkILvNpT7OZRuWLtQeuRqMbViRz7I1c-zzuqMVsym9K7Dv6FuDaOOZhN6aHsWIKZY/exec";
 
 let products = JSON.parse(localStorage.getItem('angun_cache')) || [];
 let cart = {}; 
 let isAdmin = false;
 let currentPass = "1234";
+
+// 🛠 ฟังก์ชันแปลงลิงก์ Google Drive ให้เป็น Direct Link ที่สมบูรณ์
+function formatDriveLink(url) {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('drive.google.com')) {
+        let fileId = "";
+        if (url.includes('id=')) { 
+            fileId = url.split('id=')[1].split('&')[0]; 
+        } else if (url.includes('/d/')) { 
+            fileId = url.split('/d/')[1].split('/')[0]; 
+        }
+        // แก้ไข Syntax: ใช้เครื่องหมาย ${} เพื่อให้เบราว์เซอร์อ่านค่า File ID ได้ถูกต้อง
+        return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
+    }
+    return url;
+}
 
 function initDecors() {
     const container = document.getElementById('deco-container');
@@ -129,10 +145,17 @@ async function syncData() {
     try {
         const res = await fetch(SCRIPT_URL); const data = await res.json();
         if(data.status === 'success') {
-            products = data.products; localStorage.setItem('angun_cache', JSON.stringify(products));
+            products = data.products.map(p => {
+                // 🛠 แปลงลิงก์รูปสินค้าทุกอันก่อนแสดงผล
+                p.image = formatDriveLink(p.image);
+                return p;
+            });
+            localStorage.setItem('angun_cache', JSON.stringify(products));
             if(data.settings) {
                 const imgEl = document.getElementById('shop-profile-img');
-                if(data.settings.profileImg && imgEl) { imgEl.src = data.settings.profileImg; }
+                if(data.settings.profileImg && imgEl) { 
+                    imgEl.src = formatDriveLink(data.settings.profileImg); 
+                }
                 const nameEl = document.getElementById('shop-name-display');
                 if(data.settings.shopName && nameEl) { nameEl.innerText = data.settings.shopName; }
                 currentPass = data.settings.adminPass || "1234";
@@ -201,13 +224,13 @@ async function addNewProductToSheet() {
         cat: document.getElementById('new-cat').value, 
         sub: document.getElementById('new-sub').value, 
         network: document.getElementById('new-net').value, 
-        // 🛠 แก้ไขจุดนี้: แปลงลิงก์รูปสินค้าก่อนส่งไปเซฟ
         image: formatDriveLink(document.getElementById('new-img').value), 
         preview: document.getElementById('new-preview').value, 
         recommended: document.getElementById('new-recommended').checked, 
         limitOne: document.getElementById('new-limitOne').checked 
     };
-    // ... โค้ดส่วนที่เหลือคงเดิม ...
+    if(!data.name || !data.price) return alert("กรุณากรอกชื่อและราคา"); btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
+    try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); alert(data.row ? "แก้ไขสำเร็จ!" : "บันทึกสำเร็จ!"); resetAdminForm(); syncData(); } catch(e) { alert("เกิดข้อผิดพลาด"); } finally { btn.innerText = "บันทึกข้อมูลสินค้า"; btn.disabled = false; }
 }
 
 function editProduct(rowId) {
@@ -232,22 +255,6 @@ if (!isDevMode) {
 function openProfileModal() { if (!isAdmin) { alert("ส่วนนี้สำหรับ Admin เท่านั้นจ้า ✨"); return; } document.getElementById('profile-modal').classList.add('active'); }
 function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
 
-function formatDriveLink(url) {
-    if (!url) return "";
-    // ถ้าเป็นลิงก์ Google Drive
-    if (url.includes('drive.google.com')) {
-        let fileId = "";
-        if (url.includes('id=')) { 
-            fileId = url.split('id=')[1].split('&')[0]; 
-        } else if (url.includes('/d/')) { 
-            fileId = url.split('/d/')[1].split('/')[0]; 
-        }
-        // ใช้ลิงก์รูปแบบ lh3 ซึ่งเสถียรที่สุดในการโชว์รูป
-        return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
-    }
-    return url;
-}
-
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
@@ -260,6 +267,7 @@ async function updateProfileImage() {
         document.getElementById('shop-profile-img').src = finalUrl;
         alert("✨ บันทึกรูปถาวรสำเร็จ!");
         input.value = ""; closeProfileModal();
+        syncData(); 
     } catch (e) { alert("Error!"); } finally { btn.innerText = originalText; btn.disabled = false; }
 }
 
