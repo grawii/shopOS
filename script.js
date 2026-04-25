@@ -1,4 +1,4 @@
-/* script.js - Full Version (Fixed) */
+/* script.js - Part 1: Shop Logic */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkILvNpT7OZRuWLtQeuRqMbViRz7I1c-zzuqMVsym9K7Dv6FuDaOOZhN6aHsWIKZY/exec";
 
 let products = JSON.parse(localStorage.getItem('angun_cache')) || [];
@@ -6,7 +6,6 @@ let cart = {};
 let isAdmin = false;
 let currentPass = "1234";
 
-// 1. ฟังก์ชันเริ่มต้นสำหรับคลื่นและไอคอนลอย
 function initDecors() {
     const container = document.getElementById('deco-container');
     const svgs = [
@@ -15,18 +14,15 @@ function initDecors() {
     ];
     const pos = [{t:10,l:5},{t:15,l:85},{t:40,l:10},{t:45,l:92},{t:70,l:5},{t:75,l:80},{t:25,l:45},{t:90,l:40}];
     if(container) container.innerHTML = pos.map((p, i) => `<div class="floating-deco" style="top:${p.t}%; left:${p.l}%; color:var(--pj-bg); animation-delay:${i*0.4}s">${svgs[i%2]}</div>`).join('');
-    
     const logo = document.getElementById('wave-logo');
-    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?'&nbsp;':c}</span>`).join('');
+    if(logo) logo.innerHTML = "ANGUN WAN".split('').map((c, i) => `<span class="wave-letter" style="--i:${i}">${c===' '?' ':c}</span>`).join('');
 }
 
 function updateDropdowns(dropdownData) {
     if(!dropdownData) return;
     const fill = (id, items) => {
         const el = document.getElementById(id);
-        if(el) {
-            el.innerHTML = items.filter(x => x && x !== "TaskTypes" && x !== "TaskTypes2" && x !== "Channels").map(item => `<option value="${item}">`).join('');
-        }
+        if(el) { el.innerHTML = items.filter(x => x && x !== "TaskTypes" && x !== "TaskTypes2" && x !== "Channels").map(item => `<option value="${item}">`).join(''); }
     };
     fill('list-cat', dropdownData.mainCats);
     fill('list-sub', dropdownData.subCats);
@@ -82,7 +78,7 @@ function refreshUI() {
     renderHome();
     const catTitle = document.getElementById('cat-header-title');
     if(!document.getElementById('page-subcat').classList.contains('hidden-page') && catTitle) { handleGroupClick(catTitle.innerText, true); }
-    setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
+    setTimeout(() => { if(window.lucide) { lucide.createIcons(); } }, 100);
 }
 
 function showPage(id) {
@@ -95,6 +91,7 @@ function showPage(id) {
     }
     if (window.lucide) lucide.createIcons();
 }
+/* script.js - Part 2: Admin, Security & Profile Logic */
 
 function proceedToCheckout() {
     if (Object.keys(cart).length === 0) return alert("ตะกร้าว่างเปล่าจ้า");
@@ -134,12 +131,12 @@ async function syncData() {
         if(data.status === 'success') {
             products = data.products; localStorage.setItem('angun_cache', JSON.stringify(products));
             if(data.settings) {
-                if(data.settings.profileImg) {
-                    document.getElementById('shop-profile-img').src = data.settings.profileImg;
-                }
-                if(data.settings.shopName) document.getElementById('shop-name-display').innerText = data.settings.shopName;
-                currentPass = data.settings.adminPass;
-                updateDropdowns(data.settings.dropdowns);
+                const imgEl = document.getElementById('shop-profile-img');
+                if(data.settings.profileImg && imgEl) { imgEl.src = data.settings.profileImg; }
+                const nameEl = document.getElementById('shop-name-display');
+                if(data.settings.shopName && nameEl) { nameEl.innerText = data.settings.shopName; }
+                currentPass = data.settings.adminPass || "1234";
+                if(data.settings.dropdowns) updateDropdowns(data.settings.dropdowns);
             }
             refreshUI(); renderAdminItems();
         }
@@ -206,17 +203,13 @@ function editProduct(rowId) {
     document.getElementById('edit-row').value = p.row; document.getElementById('new-name').value = p.name; document.getElementById('new-price').value = p.price; document.getElementById('new-discount').value = p.discount; document.getElementById('new-cat').value = p.cat; document.getElementById('new-sub').value = p.sub; document.getElementById('new-net').value = p.network; document.getElementById('new-img').value = p.image; document.getElementById('new-preview').value = p.preview || ''; document.getElementById('new-recommended').checked = p.recommended; document.getElementById('new-limitOne').checked = p.limitOne; document.getElementById('admin-form-title').innerText = "📝 แก้ไขรายการสินค้า"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); window.scrollTo({ top: document.getElementById('page-admin-panel').offsetTop, behavior: 'smooth' });
 }
 
-// 🛡️ SECURITY SYSTEM
-const isDevMode = false; 
+const isDevMode = false;
 if (!isDevMode) {
-    const warnings = ["หยุดนะ! อย่าพยายามแกะโค้ดเลยจ้า ✨", "เตือนครั้งที่ 1: ห้ามเข้าถึงหน้าพัฒนาซอฟต์แวร์นะ!", "สงสัยอะไรทักถาม @309ranuu ได้เลยจ้า ไม่ต้องแกะเอง", "โค้ดนี้ได้รับลิขสิทธิ์โดย องุ่นหวาน | Grawii Studio ห้ามคัดลอก!", "อุ๊ย! จะเอาโค้ดไปทำอะไรน้าาาา? 🍇"];
-    const prankLinks = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=kY3sSTZ_wDs"];
     const triggerSecurityAction = () => {
-        alert(warnings[Math.floor(Math.random() * warnings.length)]);
-        window.open(prankLinks[Math.floor(Math.random() * prankLinks.length)], '_blank'); 
+        alert("ห้ามแกะโค้ดนะจ๊ะ ✨\nลิขสิทธิ์โดย Grawii Studio");
+        window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", '_blank');
     };
     document.addEventListener('contextmenu', (e) => { e.preventDefault(); triggerSecurityAction(); });
-    document.addEventListener('copy', (e) => { e.preventDefault(); alert("ห้ามก๊อปปี้เนื้อหานะคะ องุ่นหวานขอร้อง ✨"); });
     document.onkeydown = function(e) {
         if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) {
             triggerSecurityAction(); return false;
@@ -224,11 +217,7 @@ if (!isDevMode) {
     };
 }
 
-/* --- Profile Management --- */
-function openProfileModal() { 
-    if (!isAdmin) { alert("ส่วนนี้สำหรับเจ้าของร้าน (Admin) เท่านั้นจ้า ✨"); return; }
-    document.getElementById('profile-modal').classList.add('active'); 
-}
+function openProfileModal() { if (!isAdmin) { alert("ส่วนนี้สำหรับ Admin เท่านั้นจ้า ✨"); return; } document.getElementById('profile-modal').classList.add('active'); }
 function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
 
 function formatDriveLink(url) {
@@ -237,24 +226,22 @@ function formatDriveLink(url) {
         if (url.includes('id=')) { fileId = url.split('id=')[1].split('&')[0]; } 
         else if (url.includes('/d/')) { fileId = url.split('/d/')[1].split('/')[0]; }
         return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
-    }
-    return url;
+    } return url;
 }
 
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     let rawUrl = input.value.trim();
-    if (!rawUrl) return alert("กรุณาวางลิงก์รูปภาพก่อนจ้า");
-
+    if (!rawUrl) return alert("กรุณาวางลิงก์รูปก่อนจ้า");
     const finalUrl = formatDriveLink(rawUrl);
-    const originalText = btn.innerText;
-    btn.innerText = "กำลังบันทึกข้อมูล..."; btn.disabled = true;
-
+    const originalText = btn.innerText; btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
     try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ action: 'saveProfile', url: finalUrl })
-        });
-        document.getElementById('
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProfile', url: finalUrl }) });
+        document.getElementById('shop-profile-img').src = finalUrl;
+        alert("✨ บันทึกรูปถาวรสำเร็จ!");
+        input.value = ""; closeProfileModal();
+    } catch (e) { alert("Error!"); } finally { btn.innerText = originalText; btn.disabled = false; }
+}
+
+window.addEventListener('DOMContentLoaded', () => { initDecors(); initNav(); syncData(); });
