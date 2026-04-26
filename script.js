@@ -6,7 +6,7 @@ let cart = {};
 let isAdmin = false;
 let currentPass = "1234";
 
-// 🛠 ฟังก์ชันแปลงลิงก์ Google Drive ให้เป็น Direct Link (แก้ไข Syntax ${} ให้ถูกต้อง)
+// 🛠 ฟังก์ชันแก้ไขใหม่: ซ่อม Syntax ${fileId} ให้ดึงรูปจาก Drive มาแสดงผลสาธารณะได้จริง
 function formatDriveLink(url) {
     if (!url || typeof url !== 'string') return url;
     if (url.includes('drive.google.com')) {
@@ -16,7 +16,7 @@ function formatDriveLink(url) {
         } else if (url.includes('/d/')) { 
             fileId = url.split('/d/')[1].split('/')[0]; 
         }
-        // แก้ไขแล้ว: ใช้ ` และ ${fileId} เพื่อให้ดึงค่าตัวแปรมาใช้ได้จริง
+        // แก้ไขจุดนี้: ใช้เครื่องหมาย ${fileId} ที่ถูกต้องเพื่อให้ ID แสดงผล
         return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
     }
     return url;
@@ -120,6 +120,7 @@ async function syncData() {
             localStorage.setItem('angun_cache', JSON.stringify(products));
             
             if(data.settings) {
+                // ดึงรูปโปรไฟล์จากฐานข้อมูลมาแสดงถาวร
                 const imgEl = document.getElementById('shop-profile-img');
                 if(data.settings.profileImg && imgEl) { 
                     imgEl.src = formatDriveLink(data.settings.profileImg); 
@@ -146,15 +147,16 @@ async function updateProfileImage() {
     btn.disabled = true;
 
     try {
-        // ส่งคำสั่งเซฟไปที่ Google Script ลิงก์ใหม่
+        // ส่งลิงก์ไปเขียนทับใน Google Sheet ผ่าน URL ใหม่
         await fetch(SCRIPT_URL, { 
             method: 'POST', 
             mode: 'no-cors', 
             body: JSON.stringify({ action: 'saveProfile', url: rawUrl }) 
         });
 
+        // อัปเดตการแสดงผลทันที
         document.getElementById('shop-profile-img').src = formatDriveLink(rawUrl);
-        alert("✨ บันทึกสำเร็จ! รูปจะแสดงผลถาวรในทุกเครื่องจ้า");
+        alert("✨ บันทึกสำเร็จ! รูปจะแสดงผลถาวรแม้ Logout จ้า");
         input.value = ""; closeProfileModal();
         setTimeout(syncData, 1500); 
 
@@ -179,7 +181,7 @@ window.addEventListener('DOMContentLoaded', () => {
     syncData(); 
 });
 
-/* --- ส่วนเสริมนำทางและจัดการสินค้าแอดมิน --- */
+/* --- ฟังก์ชันนำทางสินค้าแอดมิน --- */
 function renderHome() { const grid = document.getElementById('home-grid'); if(grid) grid.innerHTML = products.filter(p => p.recommended).map(p => renderCard(p)).join(''); }
 function initNav() {
     const groups = ['ฟอนต์', 'ลายน้ำ', 'BG', 'ไฟล์ตกแต่ง', 'อื่นๆ', 'รวมกลุ่ม']; const container = document.getElementById('group-nav-list');
