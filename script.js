@@ -1,7 +1,7 @@
 /* script.js - Part 1: Global State & Image Engine */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3cgPz1YWymqGxYQKzYCeoaBFWHnS09fJ5h8QEJ8EC9V8SZ8yOJJnB1P41Ix2yahBE/exec";
 
-// 📦 Global State คุมทุกอย่าง (เหมือน React useState)
+// 📦 Global State (จำลองแบบ React)
 let state = {
     products: JSON.parse(localStorage.getItem('angun_cache')) || [],
     cart: {},
@@ -29,7 +29,7 @@ function formatDriveLink(url) {
         } else if (url.includes('/d/')) { 
             fileId = url.split('/d/')[1].split('/')[0]; 
         }
-        return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
+        return fileId ? `https://lh3.googleusercontent.com/d/$${fileId}` : url;
     }
     return url;
 }
@@ -56,7 +56,7 @@ function updateDropdowns(dropdownData) {
     fill('list-sub', dropdownData.subCats);
     fill('list-net', dropdownData.channels);
 }
-/* script.js - Part 2: Display & Cart Logic (100% Functionality) */
+/* script.js - Part 2: Display & Cart Logic */
 
 function renderCard(p) {
     const rowId = Number(p.row);
@@ -120,7 +120,7 @@ function refreshUI() {
     renderHome();
     if (window.lucide) lucide.createIcons();
 }
-/* script.js - Part 3: Sync, Checkout & Admin Control */
+/* script.js - Part 3: Sync, Checkout & Admin Management */
 
 async function syncData() {
     try {
@@ -132,8 +132,8 @@ async function syncData() {
             if (response.settings) {
                 const s = response.settings;
                 state.settings.profileImg = formatDriveLink(s.ProfileImage || s.profileImg);
-                state.settings.shopName = s.shopName || s.ShopName || state.settings.shopName;
-                state.currentPass = s.adminPass || s.AdminPassword || state.currentPass;
+                state.settings.shopName = s.ShopName || state.settings.shopName;
+                state.currentPass = s.AdminPassword || s.adminPass || state.currentPass;
                 if (s.dropdowns) { state.dropdowns = s.dropdowns; updateDropdowns(state.dropdowns); }
             }
             applyStateToUI();
@@ -146,7 +146,8 @@ function applyStateToUI() {
     if (imgEl && state.settings.profileImg) imgEl.src = state.settings.profileImg;
     const nameEl = document.getElementById('shop-name-display');
     if (nameEl) nameEl.innerText = state.settings.shopName;
-    refreshUI(); renderAdminItems();
+    refreshUI(); 
+    renderAdminItems(); // วาดรายการในหน้าแอดมินใหม่
 }
 
 function proceedToCheckout() {
@@ -206,13 +207,18 @@ function closeProfileModal() { document.getElementById('profile-modal').classLis
 
 window.addEventListener('DOMContentLoaded', () => { initDecors(); initNav(); syncData(); });
 
-/* --- ส่วนที่เหลือ (Admin Grid & Home) --- */
 function renderHome() { const g = document.getElementById('home-grid'); if(g) g.innerHTML = state.products.filter(p => p.recommended).map(p => renderCard(p)).join(''); }
-function renderAdminItems() { const g = document.getElementById('admin-items-grid'); if(g) g.innerHTML = state.products.map(p => `<div class="flex justify-between items-center p-3 bg-pj-blue-light/30 rounded-xl border border-white mb-2 shadow-sm"><span>${p.name}</span><button onclick="editProduct(${p.row})" class="text-[10px] btn-edit-style px-3 py-1 rounded-lg">แก้ไข</button></div>`).join(''); }
+
+function renderAdminItems() { 
+    const g = document.getElementById('admin-items-grid'); 
+    if(g) g.innerHTML = state.products.map(p => `<div class="flex justify-between items-center p-3 bg-pj-blue-light/30 rounded-xl border border-white mb-2 shadow-sm"><span class="text-[11px] font-bold truncate w-2/3">${p.name}</span><button onclick="editProduct(${p.row})" class="text-[10px] btn-edit-style px-3 py-1 rounded-lg">แก้ไข</button></div>`).join(''); 
+}
+
 function initNav() {
     const groups = ['ฟอนต์', 'ลายน้ำ', 'BG', 'ไฟล์ตกแต่ง', 'อื่นๆ', 'รวมกลุ่ม'];
     document.getElementById('group-nav-list').innerHTML = groups.map(g => `<button onclick="handleGroupClick('${g}')" class="category-pill shadow-sm">${g}</button>`).join('');
 }
+
 function handleGroupClick(g, isRefresh = false) {
     const items = state.products.filter(p => p.cat === (g === 'รวมกลุ่ม' ? 'กลุ่ม' : g));
     const subList = ['รวมทั้งหมด', ...new Set(items.map(p => p.sub).filter(s => s))];
@@ -220,6 +226,7 @@ function handleGroupClick(g, isRefresh = false) {
     document.getElementById('sub-nav-list').innerHTML = subList.map(s => `<button onclick="renderNetworks('${g === 'รวมกลุ่ม' ? 'กลุ่ม' : g}', '${s}')" class="category-pill shadow-sm">${s}</button>`).join('');
     renderNetworks(g === 'รวมกลุ่ม' ? 'กลุ่ม' : g, 'รวมทั้งหมด');
 }
+
 function renderNetworks(cat, sub) {
     let items = state.products.filter(p => p.cat === cat); if(sub !== 'รวมทั้งหมด') items = items.filter(p => p.sub === sub);
     const nets = [...new Set(items.map(p => p.network))];
@@ -228,13 +235,24 @@ function renderNetworks(cat, sub) {
         return `<div class="bg-white/40 p-5 rounded-[40px] mb-8 shadow-sm"><h4 class="font-bold border-l-4 border-pj-brown-main pl-3 mb-5">${net || 'ทั่วไป'}</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-5">${netItems.map(p => renderCard(p)).join('')}</div></div>`;
     }).join('');
 }
+
 async function addNewProductToSheet() {
+    const btn = document.getElementById('btn-save-sheet');
     const data = { row: document.getElementById('edit-row').value, name: document.getElementById('new-name').value, price: Number(document.getElementById('new-price').value), discount: Number(document.getElementById('new-discount').value) || 0, cat: document.getElementById('new-cat').value, sub: document.getElementById('new-sub').value, network: document.getElementById('new-net').value, image: formatDriveLink(document.getElementById('new-img').value), preview: document.getElementById('new-preview').value, recommended: document.getElementById('new-recommended').checked, limitOne: document.getElementById('new-limitOne').checked };
     if(!data.name || !data.price) return alert("กรุณากรอกข้อมูล");
-    try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); alert("บันทึกสำเร็จ!"); resetAdminForm(); syncData(); } catch(e) { alert("Error!"); }
+    btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
+    try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); alert("บันทึกสำเร็จ!"); resetAdminForm(); syncData(); } catch(e) { alert("Error!"); } finally { btn.innerText = "บันทึกข้อมูลสินค้า"; btn.disabled = false; }
 }
+
 function editProduct(rowId) {
     const p = state.products.find(prod => Number(prod.row) === Number(rowId));
-    document.getElementById('edit-row').value = p.row; document.getElementById('new-name').value = p.name; document.getElementById('new-price').value = p.price; document.getElementById('new-cat').value = p.cat; document.getElementById('new-sub').value = p.sub; document.getElementById('new-net').value = p.network; document.getElementById('new-img').value = p.image; document.getElementById('new-recommended').checked = p.recommended; document.getElementById('new-limitOne').checked = p.limitOne; showPage('admin-panel');
+    if(!p) return;
+    document.getElementById('edit-row').value = p.row; document.getElementById('new-name').value = p.name; document.getElementById('new-price').value = p.price; document.getElementById('new-discount').value = p.discount || 0; document.getElementById('new-cat').value = p.cat; document.getElementById('new-sub').value = p.sub; document.getElementById('new-net').value = p.network; document.getElementById('new-img').value = p.image; document.getElementById('new-preview').value = p.preview || ''; document.getElementById('new-recommended').checked = p.recommended; document.getElementById('new-limitOne').checked = p.limitOne; document.getElementById('admin-form-title').innerText = "📝 แก้ไขรายการสินค้า"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); window.scrollTo({ top: document.getElementById('page-admin-panel').offsetTop, behavior: 'smooth' });
 }
-function resetAdminForm() { document.getElementById('edit-row').value = ""; document.querySelectorAll('.admin-input').forEach(i => i.value = ''); }
+
+function resetAdminForm() { 
+    document.getElementById('edit-row').value = ""; 
+    document.querySelectorAll('.admin-input').forEach(i => i.value = ''); 
+    document.getElementById('admin-form-title').innerText = "➕ เพิ่มสินค้าใหม่";
+    document.getElementById('btn-cancel-edit').classList.add('hidden');
+}
