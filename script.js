@@ -1,12 +1,12 @@
-/* script.js - Part 1: Shop Logic & Sync System */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkILvNpT7OZRuWLtQeuRqMbViRz7I1c-zzuqMVsym9K7Dv6FuDaOOZhN6aHsWIKZY/exec";
+/* script.js - Part 1: Core Logic */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3cgPz1YWymqGxYQKzYCeoaBFWHnS09fJ5h8QEJ8EC9V8SZ8yOJJnB1P41Ix2yahBE/exec";
 
 let products = JSON.parse(localStorage.getItem('angun_cache')) || [];
 let cart = {}; 
 let isAdmin = false;
 let currentPass = "1234";
 
-// 🛠 ฟังก์ชันแปลงลิงก์ Google Drive ให้เป็น Direct Link ที่สมบูรณ์
+// 🛠 ฟังก์ชันสำคัญ: แปลงลิงก์ Google Drive ให้เป็น Direct Link ที่ลูกค้าทุกคนมองเห็นได้ (Public)
 function formatDriveLink(url) {
     if (!url || typeof url !== 'string') return url;
     if (url.includes('drive.google.com')) {
@@ -16,7 +16,7 @@ function formatDriveLink(url) {
         } else if (url.includes('/d/')) { 
             fileId = url.split('/d/')[1].split('/')[0]; 
         }
-        // แก้ไข Syntax: ใช้เครื่องหมาย ${} เพื่อให้เบราว์เซอร์อ่านค่า File ID ได้ถูกต้อง
+        // ใช้รูปแบบ lh3 เพื่อให้แสดงผลได้เสถียรที่สุดและไม่ติดสิทธิ์การเข้าถึง
         return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
     }
     return url;
@@ -44,7 +44,7 @@ function updateDropdowns(dropdownData) {
     fill('list-sub', dropdownData.subCats);
     fill('list-net', dropdownData.channels);
 }
-
+/* script.js - Part 2: Shop Display & Cart */
 function renderCard(p) {
     const rowId = Number(p.row);
     const qty = cart[rowId] || 0; 
@@ -107,51 +107,22 @@ function showPage(id) {
     }
     if (window.lucide) lucide.createIcons();
 }
-/* script.js - Part 2: Admin, Security & Profile Logic */
-
-function proceedToCheckout() {
-    if (Object.keys(cart).length === 0) return alert("ตะกร้าว่างเปล่าจ้า");
-    toggleCartModal(false); showPage('checkout');
-    const itemsList = document.getElementById('checkout-items-list');
-    const calcList = document.getElementById('checkout-summary-calc');
-    const inputContainer = document.getElementById('checkout-input-container');
-    let totalNormal = 0; let totalDiscount = 0; let hasGroupProduct = false; let hasDigitalProduct = false;
-    itemsList.innerHTML = Object.keys(cart).map(rowId => {
-        const p = products.find(x => Number(x.row) === Number(rowId));
-        const qty = cart[rowId]; totalNormal += p.price * qty; totalDiscount += (p.discount || 0) * qty;
-        if (p.cat === 'กลุ่ม' || p.cat === 'รวมกลุ่ม') hasGroupProduct = true; else hasDigitalProduct = true;
-        return `<div class="flex justify-between items-center p-2 border-b border-pj-brown-light/10"><div class="flex flex-col"><span class="text-xs font-bold">${p.name}</span><span class="text-[10px] opacity-60">จำนวน ${qty} ชุด</span></div><span class="text-xs font-bold">${p.price - (p.discount || 0)}.-</span></div>`;
-    }).join('');
-    calcList.innerHTML = `<div class="flex justify-between"><span>ราคาปกติ</span><span>${totalNormal}.-</span></div><div class="flex justify-between text-red-500"><span>ส่วนลดทั้งหมด</span><span>-${totalDiscount}.-</span></div>`;
-    document.getElementById('checkout-final-sum').innerText = totalNormal - totalDiscount;
-    let inputHtml = "";
-    if (hasDigitalProduct) inputHtml += `<input type="email" id="cust-email" placeholder="กรอกอีเมล (สกุล @gmail.com เท่านั้น)" class="admin-input mb-3">`;
-    if (hasGroupProduct) inputHtml += `<input type="text" id="cust-line" placeholder="ไอดีไลน์ หรือ ลิ้งค์ไลน์ (สำหรับดึงเข้ากลุ่ม)" class="admin-input">`;
-    inputContainer.innerHTML = inputHtml; lucide.createIcons();
-}
-
-function confirmPurchase() {
-    const emailInput = document.getElementById('cust-email'); const lineInput = document.getElementById('cust-line'); let infoParts = [];
-    if (emailInput) { if (!emailInput.value.includes('@gmail.com')) return alert("กรุณาใช้อีเมล @gmail.com สำหรับส่งไฟล์จ้า"); infoParts.push("📧 Email: " + emailInput.value); }
-    if (lineInput) { if (lineInput.value.length < 3) return alert("กรุณากรอกไอดีไลน์ให้ถูกต้องสำหรับเข้ากลุ่มจ้า"); infoParts.push("🆔 Line: " + lineInput.value); }
-    if (infoParts.length === 0) return alert("กรุณากรอกข้อมูลผู้ซื้อให้ครบถ้วนจ้า");
-    let message = "🛒 *รายการสั่งซื้อใหม่*\n------------------\n";
-    Object.keys(cart).forEach(rowId => { const p = products.find(x => Number(x.row) === Number(rowId)); message += `- ${p.name} (x${cart[rowId]})\n`; });
-    message += `------------------\n💰 *ยอดรวม:* ${document.getElementById('checkout-final-sum').innerText} บาท\n👤 *ข้อมูลผู้ซื้อ:* \n${infoParts.join('\n')}`;
-    navigator.clipboard.writeText(message).then(() => { alert("สรุปรายการสำเร็จ! ระบบคัดลอกข้อมูลให้แล้ว กำลังส่งคุณไปที่ LINE ร้านเพื่อส่งข้อมูลจ้า"); window.location.href = "https://line.me/ti/p/@309ranuu"; });
-}
+/* script.js - Part 3: Admin & Database Sync */
 
 async function syncData() {
     try {
-        const res = await fetch(SCRIPT_URL); const data = await res.json();
+        const res = await fetch(SCRIPT_URL); 
+        const data = await res.json();
         if(data.status === 'success') {
+            // 🛠 แปลงลิงก์รูปสินค้าทุกอันก่อนเซฟลง Cache
             products = data.products.map(p => {
-                // 🛠 แปลงลิงก์รูปสินค้าทุกอันก่อนแสดงผล
                 p.image = formatDriveLink(p.image);
                 return p;
             });
             localStorage.setItem('angun_cache', JSON.stringify(products));
+            
             if(data.settings) {
+                // 🛠 ดึงรูปโปรไฟล์จาก Sheet มาแสดงเสมอ (ทำให้ Logout แล้วรูปไม่หาย)
                 const imgEl = document.getElementById('shop-profile-img');
                 if(data.settings.profileImg && imgEl) { 
                     imgEl.src = formatDriveLink(data.settings.profileImg); 
@@ -166,6 +137,62 @@ async function syncData() {
     } catch(e) { console.warn("Offline Mode"); refreshUI(); }
 }
 
+async function updateProfileImage() {
+    const input = document.getElementById('new-profile-url');
+    const btn = document.querySelector('#profile-modal .btn-pj-main');
+    let rawUrl = input.value.trim();
+    if (!rawUrl) return alert("กรุณาวางลิงก์รูปก่อนจ้า");
+    
+    const originalText = btn.innerText; 
+    btn.innerText = "กำลังบันทึกข้อมูล..."; 
+    btn.disabled = true;
+
+    try {
+        // 🚀 ส่งลิงก์ไปเขียนทับใน Google Sheet ทันที
+        await fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: JSON.stringify({ action: 'saveProfile', url: rawUrl }) 
+        });
+
+        // อัปเดตการแสดงผลทันทีบนหน้าเว็บ
+        document.getElementById('shop-profile-img').src = formatDriveLink(rawUrl);
+        
+        alert("✨ บันทึกสำเร็จ! รูปโปรไฟล์จะแสดงผลถาวรแม้คุณ Logout จ้า");
+        input.value = ""; closeProfileModal();
+        
+        // สั่ง Sync อีกรอบเพื่อให้ข้อมูลในเครื่องตรงกับฐานข้อมูลล่าสุด
+        setTimeout(syncData, 1500); 
+
+    } catch (e) { alert("บันทึกไม่สำเร็จ"); } 
+    finally { btn.innerText = originalText; btn.disabled = false; }
+}
+
+function handleAdminLogin() { 
+    const val = document.getElementById('admin-pass-input').value; 
+    if(val == currentPass) { isAdmin = true; showPage('admin-panel'); } 
+    else alert("รหัสผ่านผิดจ้า"); 
+}
+
+function logoutAdmin() { isAdmin = false; location.reload(); }
+
+function checkAdminStatus() { isAdmin ? showPage('admin-panel') : showPage('admin-login'); }
+
+function openProfileModal() { 
+    if (!isAdmin) { alert("ส่วนนี้สำหรับ Admin เท่านั้นจ้า ✨"); return; } 
+    document.getElementById('profile-modal').classList.add('active'); 
+}
+
+function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
+
+// 🚀 คำสั่งรันเริ่มต้น (ห้ามลบ)
+window.addEventListener('DOMContentLoaded', () => { 
+    initDecors(); 
+    initNav(); 
+    syncData(); 
+});
+
+/* --- ส่วนเสริมความปลอดภัยและปุ่มนำทางอื่นๆ --- */
 function renderHome() { const grid = document.getElementById('home-grid'); if(grid) grid.innerHTML = products.filter(p => p.recommended).map(p => renderCard(p)).join(''); }
 
 function initNav() {
@@ -192,9 +219,6 @@ function renderNetworks(cat, sub) {
     if (window.lucide) lucide.createIcons();
 }
 
-function checkAdminStatus() { isAdmin ? showPage('admin-panel') : showPage('admin-login'); }
-function handleAdminLogin() { const val = document.getElementById('admin-pass-input').value; if(val == currentPass) { isAdmin = true; showPage('admin-panel'); } else alert("รหัสผ่านผิดจ้า"); }
-function logoutAdmin() { isAdmin = false; location.reload(); }
 function toggleCartModal(show) { document.getElementById('cart-modal').classList.toggle('active', show); if(show) renderCartItems(); }
 
 function renderCartItems() {
@@ -229,46 +253,17 @@ async function addNewProductToSheet() {
         recommended: document.getElementById('new-recommended').checked, 
         limitOne: document.getElementById('new-limitOne').checked 
     };
-    if(!data.name || !data.price) return alert("กรุณากรอกชื่อและราคา"); btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
-    try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); alert(data.row ? "แก้ไขสำเร็จ!" : "บันทึกสำเร็จ!"); resetAdminForm(); syncData(); } catch(e) { alert("เกิดข้อผิดพลาด"); } finally { btn.innerText = "บันทึกข้อมูลสินค้า"; btn.disabled = false; }
+    if(!data.name || !data.price) return alert("กรุณากรอกชื่อและราคา"); 
+    btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
+    try { 
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProduct', product: data }) }); 
+        alert(data.row ? "แก้ไขสำเร็จ!" : "บันทึกสำเร็จ!"); 
+        resetAdminForm(); syncData(); 
+    } catch(e) { alert("เกิดข้อผิดพลาด"); } 
+    finally { btn.innerText = "บันทึกข้อมูลสินค้า"; btn.disabled = false; }
 }
 
 function editProduct(rowId) {
     const p = products.find(prod => Number(prod.row) === Number(rowId)); if (!p) return;
     document.getElementById('edit-row').value = p.row; document.getElementById('new-name').value = p.name; document.getElementById('new-price').value = p.price; document.getElementById('new-discount').value = p.discount; document.getElementById('new-cat').value = p.cat; document.getElementById('new-sub').value = p.sub; document.getElementById('new-net').value = p.network; document.getElementById('new-img').value = p.image; document.getElementById('new-preview').value = p.preview || ''; document.getElementById('new-recommended').checked = p.recommended; document.getElementById('new-limitOne').checked = p.limitOne; document.getElementById('admin-form-title').innerText = "📝 แก้ไขรายการสินค้า"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); window.scrollTo({ top: document.getElementById('page-admin-panel').offsetTop, behavior: 'smooth' });
 }
-
-const isDevMode = false;
-if (!isDevMode) {
-    const triggerSecurityAction = () => {
-        alert("ห้ามแกะโค้ดนะจ๊ะ ✨\nลิขสิทธิ์โดย Grawii Studio");
-        window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", '_blank');
-    };
-    document.addEventListener('contextmenu', (e) => { e.preventDefault(); triggerSecurityAction(); });
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) {
-            triggerSecurityAction(); return false;
-        }
-    };
-}
-
-function openProfileModal() { if (!isAdmin) { alert("ส่วนนี้สำหรับ Admin เท่านั้นจ้า ✨"); return; } document.getElementById('profile-modal').classList.add('active'); }
-function closeProfileModal() { document.getElementById('profile-modal').classList.remove('active'); }
-
-async function updateProfileImage() {
-    const input = document.getElementById('new-profile-url');
-    const btn = document.querySelector('#profile-modal .btn-pj-main');
-    let rawUrl = input.value.trim();
-    if (!rawUrl) return alert("กรุณาวางลิงก์รูปก่อนจ้า");
-    const finalUrl = formatDriveLink(rawUrl);
-    const originalText = btn.innerText; btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
-    try {
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProfile', url: finalUrl }) });
-        document.getElementById('shop-profile-img').src = finalUrl;
-        alert("✨ บันทึกรูปถาวรสำเร็จ!");
-        input.value = ""; closeProfileModal();
-        syncData(); 
-    } catch (e) { alert("Error!"); } finally { btn.innerText = originalText; btn.disabled = false; }
-}
-
-window.addEventListener('DOMContentLoaded', () => { initDecors(); initNav(); syncData(); });
