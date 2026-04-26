@@ -6,7 +6,7 @@ let cart = {};
 let isAdmin = false;
 let currentPass = "1234";
 
-// 🛠 ฟังก์ชันแก้ไขใหม่: ซ่อม Syntax ${fileId} ให้ดึงรูปจาก Drive มาแสดงผลสาธารณะได้จริง
+// 🛠 ฟังก์ชันแก้ไขพิเศษ: ซ่อม Syntax และใช้ Direct Link ที่เสถียรที่สุด
 function formatDriveLink(url) {
     if (!url || typeof url !== 'string') return url;
     if (url.includes('drive.google.com')) {
@@ -16,7 +16,7 @@ function formatDriveLink(url) {
         } else if (url.includes('/d/')) { 
             fileId = url.split('/d/')[1].split('/')[0]; 
         }
-        // แก้ไขจุดนี้: ใช้เครื่องหมาย ${fileId} ที่ถูกต้องเพื่อให้ ID แสดงผล
+        // ✅ ใช้เครื่องหมาย $ และ backtick เพื่อดึง ID มาต่อเป็นลิงก์รูปที่ถูกต้อง
         return fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : url;
     }
     return url;
@@ -106,7 +106,7 @@ function showPage(id) {
     }
     if (window.lucide) lucide.createIcons();
 }
-/* script.js - Part 3: Database & Profile Admin */
+/* script.js - Part 3: Database & Admin Control */
 
 async function syncData() {
     try {
@@ -120,14 +120,16 @@ async function syncData() {
             localStorage.setItem('angun_cache', JSON.stringify(products));
             
             if(data.settings) {
-                // ดึงรูปโปรไฟล์จากฐานข้อมูลมาแสดงถาวร
                 const imgEl = document.getElementById('shop-profile-img');
-                if(data.settings.profileImg && imgEl) { 
-                    imgEl.src = formatDriveLink(data.settings.profileImg); 
+                // 🛠 แก้ให้หาคีย์ชื่อ "ProfileImage" (ตัวพิมพ์ใหญ่ตามในชีทคุณเป๊ะๆ)
+                const profileUrl = data.settings.ProfileImage || data.settings.profileImg;
+                
+                if(profileUrl && imgEl) { 
+                    imgEl.src = formatDriveLink(profileUrl); 
                 }
                 const nameEl = document.getElementById('shop-name-display');
                 if(data.settings.shopName && nameEl) { nameEl.innerText = data.settings.shopName; }
-                currentPass = data.settings.adminPass || "1234";
+                currentPass = data.settings.AdminPassword || data.settings.adminPass || "1234";
                 if(data.settings.dropdowns) updateDropdowns(data.settings.dropdowns);
             }
             refreshUI(); 
@@ -147,16 +149,15 @@ async function updateProfileImage() {
     btn.disabled = true;
 
     try {
-        // ส่งลิงก์ไปเขียนทับใน Google Sheet ผ่าน URL ใหม่
+        // บันทึกผ่าน POST โดยใช้ action ที่ Library รู้จัก
         await fetch(SCRIPT_URL, { 
             method: 'POST', 
             mode: 'no-cors', 
             body: JSON.stringify({ action: 'saveProfile', url: rawUrl }) 
         });
 
-        // อัปเดตการแสดงผลทันที
         document.getElementById('shop-profile-img').src = formatDriveLink(rawUrl);
-        alert("✨ บันทึกสำเร็จ! รูปจะแสดงผลถาวรแม้ Logout จ้า");
+        alert("✨ บันทึกสำเร็จ! รูปจะโชว์ถาวรในทุกเครื่องจ้า");
         input.value = ""; closeProfileModal();
         setTimeout(syncData, 1500); 
 
