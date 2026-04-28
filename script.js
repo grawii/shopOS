@@ -187,16 +187,45 @@ function confirmPurchase() {
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url'); 
     const btn = document.querySelector('#profile-modal .btn-pj-main');
-    if (!input.value.trim()) return alert("กรุณาวางลิงก์ก่อนจ้า");
-    const formattedUrl = formatDriveLink(input.value.trim());
-    btn.innerText = "กำลังบันทึก..."; btn.disabled = true;
+    const imgEl = document.getElementById('shop-profile-img');
+
+    let val = input.value.trim();
+    if (!val) return alert("กรุณาใส่ ID รูปก่อนจ้า");
+
+    let finalUrl = "";
+
+    // ตรวจสอบว่าผู้ใช้วางมาแบบไหน
+    if (val.includes('http')) {
+        // ถ้าเผลอวางลิ้งค์เต็ม ให้ดึงแค่ ID ออกมาแปลง
+        finalUrl = formatDriveLink(val);
+    } else {
+        // ✅ ถ้าวางแค่ ID ให้เติม Prefix ที่คุณต้องการให้ทันที
+        finalUrl = `http://googleusercontent.com/profile/picture/${val}`;
+    }
+
+    btn.innerText = "กำลังบันทึก..."; 
+    btn.disabled = true;
+
     try {
-        localStorage.setItem('shop_profile', formattedUrl);
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'saveProfile', url: formattedUrl }) });
-        alert("✨ บันทึกรูปโปรไฟล์ถาวรสำเร็จ!"); closeProfileModal();
-        document.getElementById('shop-profile-img').src = formattedUrl;
-        setTimeout(syncData, 1500);
-    } catch (e) { alert("Error!"); } finally { btn.innerText = "บันทึกรูปภาพ"; btn.disabled = false; }
+        localStorage.setItem('shop_profile', finalUrl);
+        if (imgEl) imgEl.src = finalUrl;
+
+        await fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: JSON.stringify({ action: 'saveProfile', url: finalUrl }) 
+        });
+
+        alert("✨ บันทึกรูปโปรไฟล์ถาวรสำเร็จ!"); 
+        closeProfileModal();
+        input.value = ""; 
+        setTimeout(syncData, 1000);
+    } catch (e) { 
+        alert("เกิดข้อผิดพลาดจ้า"); 
+    } finally { 
+        btn.innerText = "บันทึกรูปภาพใหม่"; 
+        btn.disabled = false; 
+    }
 }
 
 function showPage(id) {
