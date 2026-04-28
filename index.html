@@ -172,13 +172,28 @@
         <div class="bg-white w-[90%] max-w-[400px] rounded-[35px] p-8 relative shadow-2xl border-2 border-pj-brown-main">
             <button type="button" onclick="closeProfileModal()" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full text-pj-brown-dark">✕</button>
             <h3 class="font-bold text-lg text-pj-brown-dark mb-2 text-center">🖼️ เปลี่ยนรูปโปรไฟล์</h3>
-            <p class="text-[10px] text-center mb-6 opacity-60 uppercase tracking-widest font-bold">ใส่ลิงก์รูปภาพ (รองรับ Google Drive)</p>
-            <input type="text" id="new-profile-url" placeholder="วางลิงก์รูปภาพที่นี่..." class="admin-input mb-6 w-full text-center">
+            
+            <p class="text-[10px] text-center mb-1 opacity-80 uppercase tracking-widest font-bold text-pj-brown-dark">
+                วางเฉพาะ ID ของรูปจาก Google Drive
+            </p>
+            <p class="text-[9px] text-center mb-6 opacity-50 font-medium">
+                (เช่น 1HpM3InApdD1nNe2xsKxyGSQ_...)
+            </p>
+
+            <div class="relative mb-6">
+                <input type="text" id="new-profile-url" 
+                    placeholder="วาง ID รูปที่นี่..." 
+                    class="admin-input w-full text-center bg-gray-50 border-dashed">
+            </div>
+
             <div class="flex gap-2">
-                <button type="button" onclick="updateProfileImage()" class="btn-pj-main flex-1 py-4 rounded-2xl text-sm font-bold shadow-md">บันทึกรูปภาพ</button>
+                <button type="button" onclick="updateProfileImage()" class="btn-pj-main flex-1 py-4 rounded-2xl text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95">
+                    บันทึกรูปภาพใหม่
+                </button>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
     <script>lucide.createIcons();</script>
 </body>
