@@ -184,32 +184,54 @@ function confirmPurchase() {
     navigator.clipboard.writeText(message).then(() => { alert("สรุปรายการสำเร็จ! ระบบคัดลอกข้อมูลให้แล้ว กำลังส่งคุณไปที่ LINE จ้า"); window.location.href = "https://line.me/ti/p/@309ranuu"; });
 }
 
+// 1. แก้ไขฟังก์ชันเปิด Modal เพื่อให้เติมลิ้งค์นำหน้าอัตโนมัติ
+function openProfileModal() {
+    if (!state.isAdmin) return;
+    const modal = document.getElementById('profile-modal');
+    const input = document.getElementById('new-profile-url');
+    
+    modal.classList.add('active');
+    
+    // ✅ เติมลิ้งค์นำหน้าให้ทันทีที่เปิดช่องกรอก
+    input.value = "http://googleusercontent.com/profile/picture/";
+    
+    // เลื่อนเคอร์เซอร์ไปไว้ท้ายสุดเพื่อให้พร้อมวาง ID ต่อได้เลย
+    setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    }, 100);
+}
+
+// 2. แก้ไขฟังก์ชันบันทึกรูปภาพ
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url'); 
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     const imgEl = document.getElementById('shop-profile-img');
 
-    let val = input.value.trim();
-    if (!val) return alert("กรุณาใส่ ID รูปก่อนจ้า");
+    let finalUrl = input.value.trim();
+    const prefix = "http://googleusercontent.com/profile/picture/";
 
-    let finalUrl = "";
+    // ตรวจสอบว่ามีการวาง ID ต่อท้ายหรือยัง
+    if (finalUrl === prefix || finalUrl === "") {
+        return alert("กรุณาวาง ID ต่อท้ายลิ้งค์ด้วยนะจ๊ะ");
+    }
 
-    // ตรวจสอบว่าผู้ใช้วางมาแบบไหน
-    if (val.includes('http')) {
-        // ถ้าเผลอวางลิ้งค์เต็ม ให้ดึงแค่ ID ออกมาแปลง
-        finalUrl = formatDriveLink(val);
-    } else {
-        // ✅ ถ้าวางแค่ ID ให้เติม Prefix ที่คุณต้องการให้ทันที
-        finalUrl = `http://googleusercontent.com/profile/picture/${val}`;
+    // กรณีถ้าลูกค้าเผลอไปลบ Prefix หรือวางลิ้งค์ Drive เต็มมา
+    if (finalUrl.includes('drive.google.com')) {
+        finalUrl = formatDriveLink(finalUrl); // แปลงจากลิ้งค์เต็มให้เป็น Direct Link
     }
 
     btn.innerText = "กำลังบันทึก..."; 
     btn.disabled = true;
 
     try {
+        // บันทึกลงเครื่อง (LocalStorage)
         localStorage.setItem('shop_profile', finalUrl);
+        
+        // อัปเดตการแสดงผลหน้าเว็บทันที
         if (imgEl) imgEl.src = finalUrl;
 
+        // บันทึกลง Google Sheets ถาวร
         await fetch(SCRIPT_URL, { 
             method: 'POST', 
             mode: 'no-cors', 
@@ -218,12 +240,15 @@ async function updateProfileImage() {
 
         alert("✨ บันทึกรูปโปรไฟล์ถาวรสำเร็จ!"); 
         closeProfileModal();
-        input.value = ""; 
-        setTimeout(syncData, 1000);
+        
+        // รีเฟรชข้อมูลจาก Sheets เพื่อความชัวร์
+        setTimeout(syncData, 1500);
+
     } catch (e) { 
-        alert("เกิดข้อผิดพลาดจ้า"); 
+        console.error(e);
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Sheets จ้า"); 
     } finally { 
-        btn.innerText = "บันทึกรูปภาพใหม่"; 
+        btn.innerText = "บันทึกรูปโปรไฟล์ใหม่"; 
         btn.disabled = false; 
     }
 }
