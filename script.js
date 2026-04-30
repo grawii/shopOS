@@ -185,6 +185,9 @@ function confirmPurchase() {
 }
 
 // 1. ฟังก์ชันสำหรับเปิด Modal (แก้ไขจากเดิม)
+const IMAGE_PREFIX = "http://googleusercontent.com/profile/picture/";
+
+// 1. ฟังก์ชันเปิด Modal ให้มีลิ้งค์รอไว้ (ตัวทึบชัดเจน)
 function openProfileModal() {
     if (!state.isAdmin) return;
     const modal = document.getElementById('profile-modal');
@@ -192,70 +195,71 @@ function openProfileModal() {
     
     modal.classList.add('active');
     
-    // ✅ กำหนดลิงก์นำหน้า (Prefix) ตามรูปที่คุณต้องการ
-    const prefix = "https://lh3.googleusercontent.com/d/";
-    input.value = prefix;
+    // ตั้งค่าลิ้งค์หลักรอไว้
+    input.value = IMAGE_PREFIX;
     
-    // ตั้งค่าให้ Cursor ไปอยู่ท้ายสุดอัตโนมัติเพื่อให้พร้อมวาง ID
     setTimeout(() => {
         input.focus();
+        // ให้เคอร์เซอร์ไปอยู่ท้ายสุด พร้อมให้วางต่อ
         input.setSelectionRange(input.value.length, input.value.length);
     }, 100);
 }
 
-// 2. ฟังก์ชันบันทึกรูปภาพ (แก้ไขให้เสถียรขึ้น)
+// 2. ฟังก์ชันดักจับการ "วาง" (Magic ส่วนนี้ครับ)
+function handlePaste(event) {
+    // ป้องกันการวางแบบปกติก่อน
+    event.preventDefault();
+    
+    // ดึงข้อมูลจาก Clipboard (สิ่งที่เราก๊อปมา)
+    let pasteData = (event.clipboardData || window.clipboardData).getData('text');
+    let fileId = "";
+
+    // ถ้าสิ่งที่วางมีเค้าลางว่าเป็นลิ้งค์ Google Drive
+    if (pasteData.includes('drive.google.com')) {
+        if (pasteData.includes('id=')) {
+            fileId = pasteData.split('id=')[1].split('&')[0];
+        } else if (pasteData.includes('/d/')) {
+            fileId = pasteData.split('/d/')[1].split('/')[0];
+        }
+    } else {
+        // ถ้าสิ่งที่วางไม่ใช่ลิ้งค์ Drive (อาจจะเป็น ID เพียวๆ) ให้ใช้ค่านั้นเลย
+        fileId = pasteData;
+    }
+
+    // เอาลิ้งค์หลัก + ID ที่ตัดมาได้ ใส่กลับลงไปในช่องกรอก
+    const input = document.getElementById('new-profile-url');
+    input.value = IMAGE_PREFIX + fileId;
+}
+
+// 3. ฟังก์ชันบันทึกรูปภาพ
 async function updateProfileImage() {
-    const input = document.getElementById('new-profile-url'); 
+    const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     const imgEl = document.getElementById('shop-profile-img');
+    const finalUrl = input.value.trim();
 
-    const prefix = "https://lh3.googleusercontent.com/d/";
-    let val = input.value.trim();
+    if (finalUrl === IMAGE_PREFIX) return alert("กรุณาวางลิ้งค์หรือ ID ก่อนบันทึกจ้า");
 
-    // ตรวจสอบว่าได้วาง ID หรือยัง
-    if (val === prefix || !val) {
-        return alert("กรุณาวาง ID ต่อท้ายลิ้งค์ด้วยนะจ๊ะ");
-    }
-
-    let finalUrl = val;
-
-    // 🛠 กรณีเผื่อผู้ใช้วางลิ้งค์ Drive เต็มมา ระบบจะพยายามดึงเฉพาะ ID มาประกอบใหม่
-    if (val.includes('drive.google.com')) {
-        let fileId = "";
-        if (val.includes('id=')) { 
-            fileId = val.split('id=')[1].split('&')[0]; 
-        } else if (val.includes('/d/')) { 
-            fileId = val.split('/d/')[1].split('/')[0]; 
-        }
-        finalUrl = prefix + fileId;
-    }
-
-    btn.innerText = "กำลังบันทึก..."; 
+    btn.innerText = "กำลังบันทึก...";
     btn.disabled = true;
 
     try {
-        // บันทึกลงเครื่องและอัปเดตหน้าเว็บทันที
         localStorage.setItem('shop_profile', finalUrl);
         if (imgEl) imgEl.src = finalUrl;
 
-        // บันทึกลง Google Sheets
-        await fetch(SCRIPT_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify({ action: 'saveProfile', url: finalUrl }) 
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'saveProfile', url: finalUrl })
         });
 
-        alert("✨ บันทึกรูปโปรไฟล์สำเร็จ!"); 
+        alert("✨ เปลี่ยนรูปโปรไฟล์เรียบร้อย!");
         closeProfileModal();
-        
-        // ล้างค่าใน input และซิงค์ข้อมูล
-        input.value = ""; 
-        setTimeout(syncData, 1000);
-    } catch (e) { 
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อจ้า"); 
-    } finally { 
-        btn.innerText = "บันทึกรูปโปรไฟล์ใหม่"; 
-        btn.disabled = false; 
+    } catch (e) {
+        alert("เกิดข้อผิดพลาดจ้า");
+    } finally {
+        btn.innerText = "บันทึกรูปภาพ";
+        btn.disabled = false;
     }
 }
 
