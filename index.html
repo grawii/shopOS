@@ -171,28 +171,28 @@
     <div id="profile-modal" class="modal-cart">
         <div class="bg-white w-[90%] max-w-[400px] rounded-[35px] p-8 relative shadow-2xl border-2 border-pj-brown-main">
             <button type="button" onclick="closeProfileModal()" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full text-pj-brown-dark">✕</button>
-            <h3 class="font-bold text-lg text-pj-brown-dark mb-2 text-center">🖼️ เปลี่ยนรูปโปรไฟล์</h3>
             
-            <p class="text-[10px] text-center mb-1 opacity-80 uppercase tracking-widest font-bold text-pj-brown-dark">
+            <h3 class="font-bold text-lg text-pj-brown-dark mb-1 text-center">🖼️ เปลี่ยนรูปโปรไฟล์</h3>
+            <p class="text-[10px] text-center mb-6 opacity-60 font-bold uppercase tracking-widest text-pj-brown-dark">
                 วางเฉพาะ ID ต่อท้ายลิ้งค์ด้านล่าง
             </p>
-            <p class="text-[9px] text-center mb-6 opacity-50 font-medium">
-                (ID คือชุดตัวอักษรยาวๆ จาก Google Drive)
-            </p>
-
+            
             <div class="relative mb-6">
+                <!-- ช่อง Input ที่จะถูกเติมค่าเริ่มต้นอัตโนมัติ -->
                 <input type="text" id="new-profile-url" 
-                    class="admin-input w-full text-center bg-gray-50 border-dashed text-[11px]"
-                    style="letter-spacing: 0.5px;">
+                    placeholder="1HS17..." 
+                    class="admin-input w-full text-center bg-gray-50 border-dashed text-[12px] font-bold"
+                    style="letter-spacing: 0.2px;">
             </div>
 
             <div class="flex gap-2">
-                <button type="button" onclick="updateProfileImage()" class="btn-pj-main flex-1 py-4 rounded-2xl text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-95">
+                <button type="button" onclick="updateProfileImage()" class="btn-pj-main flex-1 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-95">
                     บันทึกรูปโปรไฟล์ใหม่
                 </button>
             </div>
         </div>
     </div>
+
 
     <script src="script.js"></script>
     <script>lucide.createIcons();</script>
