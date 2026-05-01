@@ -1,5 +1,5 @@
 /* script.js - Part 1: Global State & Image Engine */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3cgPz1YWymqGxYQKzYCeoaBFWHnS09fJ5h8QEJ8EC9V8SZ8yOJJnB1P41Ix2yahBE/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymV3cQoKaVPjcd1NXtzkQrXVMZp7WYadOOQXjq8hQF3Jp87XHi9TIUuHk9G1iPWJCA/exec";
 
 // 📦 Global State
 let state = {
@@ -187,76 +187,43 @@ function confirmPurchase() {
 // 1. ฟังก์ชันสำหรับเปิด Modal (แก้ไขจากเดิม)
 const IMAGE_PREFIX = "http://googleusercontent.com/profile/picture/";
 
-// 1. ฟังก์ชันเปิด Modal ให้มีลิ้งค์รอไว้ (ตัวทึบชัดเจน)
-function openProfileModal() {
-    if (!state.isAdmin) return;
-    const modal = document.getElementById('profile-modal');
-    const input = document.getElementById('new-profile-url');
-    
-    modal.classList.add('active');
-    
-    // ตั้งค่าลิ้งค์หลักรอไว้
-    input.value = IMAGE_PREFIX;
-    
-    setTimeout(() => {
-        input.focus();
-        // ให้เคอร์เซอร์ไปอยู่ท้ายสุด พร้อมให้วางต่อ
-        input.setSelectionRange(input.value.length, input.value.length);
-    }, 100);
-}
-
-// 2. ฟังก์ชันดักจับการ "วาง" (Magic ส่วนนี้ครับ)
-function handlePaste(event) {
-    // ป้องกันการวางแบบปกติก่อน
-    event.preventDefault();
-    
-    // ดึงข้อมูลจาก Clipboard (สิ่งที่เราก๊อปมา)
-    let pasteData = (event.clipboardData || window.clipboardData).getData('text');
-    let fileId = "";
-
-    // ถ้าสิ่งที่วางมีเค้าลางว่าเป็นลิ้งค์ Google Drive
-    if (pasteData.includes('drive.google.com')) {
-        if (pasteData.includes('id=')) {
-            fileId = pasteData.split('id=')[1].split('&')[0];
-        } else if (pasteData.includes('/d/')) {
-            fileId = pasteData.split('/d/')[1].split('/')[0];
-        }
-    } else {
-        // ถ้าสิ่งที่วางไม่ใช่ลิ้งค์ Drive (อาจจะเป็น ID เพียวๆ) ให้ใช้ค่านั้นเลย
-        fileId = pasteData;
-    }
-
-    // เอาลิ้งค์หลัก + ID ที่ตัดมาได้ ใส่กลับลงไปในช่องกรอก
-    const input = document.getElementById('new-profile-url');
-    input.value = IMAGE_PREFIX + fileId;
-}
-
-// 3. ฟังก์ชันบันทึกรูปภาพ
 async function updateProfileImage() {
     const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     const imgEl = document.getElementById('shop-profile-img');
     const finalUrl = input.value.trim();
 
-    if (finalUrl === IMAGE_PREFIX) return alert("กรุณาวางลิ้งค์หรือ ID ก่อนบันทึกจ้า");
+    if (finalUrl === IMAGE_PREFIX) return alert("กรุณาวาง ID ก่อนนะจ๊ะ");
 
-    btn.innerText = "กำลังบันทึก...";
+    btn.innerText = "กำลังบันทึกออนไลน์...";
     btn.disabled = true;
 
     try {
-        localStorage.setItem('shop_profile', finalUrl);
-        if (imgEl) imgEl.src = finalUrl;
-
-        await fetch(SCRIPT_URL, {
+        // 1. ส่งข้อมูลไป Google Sheets (สำคัญที่สุด)
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ action: 'saveProfile', url: finalUrl })
+            mode: 'no-cors', // ใช้ no-cors เพื่อส่งข้อมูลข้ามโดเมน
+            body: JSON.stringify({ 
+                action: 'saveProfile', 
+                url: finalUrl 
+            })
         });
 
-        alert("✨ เปลี่ยนรูปโปรไฟล์เรียบร้อย!");
+        // 2. บันทึกลงเครื่อง (LocalStorage) เพื่อความเร็วในการแสดงผล
+        localStorage.setItem('shop_profile', finalUrl);
+        
+        // 3. เปลี่ยนรูปที่หน้าจอทันที
+        if (imgEl) imgEl.src = finalUrl;
+
+        alert("✨ บันทึกข้อมูลลงฐานข้อมูลเรียบร้อยแล้ว! รูปจะขึ้นในทุกเครื่องครับ");
         closeProfileModal();
+        
+        // บังคับ Sync ข้อมูลใหม่เพื่อให้แน่ใจว่าค่าถูกบันทึกแล้ว
+        setTimeout(syncData, 1500);
+
     } catch (e) {
-        alert("เกิดข้อผิดพลาดจ้า");
+        console.error(e);
+        alert("บันทึกไม่สำเร็จ! ตรวจสอบอินเทอร์เน็ต หรือลิ้งค์ SCRIPT_URL นะครับ");
     } finally {
         btn.innerText = "บันทึกรูปภาพ";
         btn.disabled = false;
