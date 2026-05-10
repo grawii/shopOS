@@ -22,16 +22,34 @@ let state = {
 // 🛠 ฟังก์ชันแปลงลิงก์ Drive (✅ FIXED: ต้องมี $ นำหน้าปีกกา)
 function formatDriveLink(url) {
     if (!url || typeof url !== 'string') return url;
-    if (url.includes('drive.google.com')) {
-        let fileId = "";
-        if (url.includes('id=')) { 
-            fileId = url.split('id=')[1].split('&')[0]; 
-        } else if (url.includes('/d/')) { 
-            fileId = url.split('/d/')[1].split('/')[0]; 
-        }
-        // ✅ แก้ไขแล้ว: ต้องใช้ $ เพื่อให้ดึงค่าตัวแปร ID มาใช้ได้จริง
-        return fileId ? `https://lh3.googleusercontent.com/d/$${fileId}` : url;
+
+    // ถ้าเป็นลิงก์ googleusercontent อยู่แล้ว
+    if (url.includes('lh3.googleusercontent.com')) {
+        return url;
     }
+
+    // ถ้าเป็น Google Drive
+    if (url.includes('drive.google.com')) {
+
+        let fileId = "";
+
+        // แบบ open?id=
+        const idMatch = url.match(/[?&]id=([^&]+)/);
+
+        // แบบ /file/d/
+        const dMatch = url.match(/\/d\/([^\/]+)/);
+
+        if (idMatch && idMatch[1]) {
+            fileId = idMatch[1];
+        } else if (dMatch && dMatch[1]) {
+            fileId = dMatch[1];
+        }
+
+        if (fileId) {
+            return `https://lh3.googleusercontent.com/d/${fileId}`;
+        }
+    }
+
     return url;
 }
 
@@ -127,11 +145,11 @@ async function syncData() {
         const res = await fetch(SCRIPT_URL);
         const response = await res.json();
         if (response.status === 'success') {
-            state.products = response.products.map(p => ({ ...p, image: formatDriveLink(p.image) }));
+state.products = response.products.map(p => ({...p, image: formatDriveLink(p.image) + `?t=${Date.now()}`}));
             localStorage.setItem('angun_cache', JSON.stringify(state.products));
             if (response.settings) {
                 const s = response.settings;
-                state.settings.profileImg = formatDriveLink(s.ProfileImage || s.profileImg);
+state.settings.profileImg =formatDriveLink(s.ProfileImage || s.profileImg) + `?t=${Date.now()}`;
                 state.settings.shopName = s.ShopName || state.settings.shopName;
                 state.currentPass = s.AdminPassword || s.adminPass || state.currentPass;
                 if (s.dropdowns) { state.dropdowns = s.dropdowns; updateDropdowns(state.dropdowns); }
@@ -142,11 +160,11 @@ async function syncData() {
 }
 
 function applyStateToUI() {
-    const imgEl = document.getElementById('shop-profile-img');
-    const localImg = localStorage.getItem('shop_profile');
-    if (imgEl) {
-        imgEl.src = localImg || state.settings.profileImg;
-    }
+const imgEl = document.getElementById('shop-profile-img');
+
+if (imgEl) {
+    imgEl.src = formatDriveLink(state.settings.profileImg);
+}
     const nameEl = document.getElementById('shop-name-display');
     if (nameEl) nameEl.innerText = state.settings.shopName;
     refreshUI(); 
@@ -185,48 +203,63 @@ function confirmPurchase() {
 }
 
 // 1. ฟังก์ชันสำหรับเปิด Modal (แก้ไขจากเดิม)
-const IMAGE_PREFIX = "http://googleusercontent.com/profile/picture/";
 
 async function updateProfileImage() {
+
     const input = document.getElementById('new-profile-url');
     const btn = document.querySelector('#profile-modal .btn-pj-main');
     const imgEl = document.getElementById('shop-profile-img');
-    const finalUrl = input.value.trim();
 
-    if (finalUrl === IMAGE_PREFIX) return alert("กรุณาวาง ID ก่อนนะจ๊ะ");
+    let finalUrl = input.value.trim();
 
-    btn.innerText = "กำลังบันทึกออนไลน์...";
+    if (!finalUrl) {
+        return alert("กรุณาวางลิงก์รูปภาพ");
+    }
+
+    // แปลงลิงก์ Drive
+    finalUrl = formatDriveLink(finalUrl);
+
+    btn.innerText = "กำลังบันทึก...";
     btn.disabled = true;
 
     try {
-        // 1. ส่งข้อมูลไป Google Sheets (สำคัญที่สุด)
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', // ใช้ no-cors เพื่อส่งข้อมูลข้ามโดเมน
-            body: JSON.stringify({ 
-                action: 'saveProfile', 
-                url: finalUrl 
-            })
-        });
 
-        // 2. บันทึกลงเครื่อง (LocalStorage) เพื่อความเร็วในการแสดงผล
-        localStorage.setItem('shop_profile', finalUrl);
-        
-        // 3. เปลี่ยนรูปที่หน้าจอทันที
-        if (imgEl) imgEl.src = finalUrl;
+await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({
+        action: 'saveProfile',
+        url: finalUrl
+    })
+});
 
-        alert("✨ บันทึกข้อมูลลงฐานข้อมูลเรียบร้อยแล้ว! รูปจะขึ้นในทุกเครื่องครับ");
+        // อัปเดต state
+        state.settings.profileImg = finalUrl;
+
+        // เปลี่ยนรูปทันที
+        if (imgEl) {
+            imgEl.src = finalUrl;
+        }
+
+        alert("✅ บันทึกรูปโปรไฟล์สำเร็จ");
+
         closeProfileModal();
-        
-        // บังคับ Sync ข้อมูลใหม่เพื่อให้แน่ใจว่าค่าถูกบันทึกแล้ว
-        setTimeout(syncData, 1500);
+
+        // sync ใหม่
+        setTimeout(() => {
+            syncData();
+        }, 1000);
 
     } catch (e) {
+
         console.error(e);
-        alert("บันทึกไม่สำเร็จ! ตรวจสอบอินเทอร์เน็ต หรือลิ้งค์ SCRIPT_URL นะครับ");
+        alert("❌ บันทึกไม่สำเร็จ");
+
     } finally {
+
         btn.innerText = "บันทึกรูปภาพ";
         btn.disabled = false;
+
     }
 }
 
@@ -302,4 +335,18 @@ function resetAdminForm() {
     document.querySelectorAll('.admin-input').forEach(i => i.value = ''); 
     document.getElementById('admin-form-title').innerText = "➕ เพิ่มสินค้าใหม่";
     document.getElementById('btn-cancel-edit').classList.add('hidden');
+}
+
+function handlePaste(event) {
+
+    setTimeout(() => {
+
+        const input = document.getElementById('new-profile-url');
+
+        if (!input) return;
+
+        input.value = formatDriveLink(input.value.trim());
+
+    }, 100);
+
 }
